@@ -23,12 +23,25 @@ import java.util.List;
 public class Start {
 
     public static void main(String[] args) throws IOException {
-        File file = new File("/home/oem/test/CB0300-10-S03.02.00.pdf");
+        String fileName = "";
+        File folder = new File("/home/oem/test/");
+        File[] listOfFiles = folder.listFiles();
+
+        for (int i = 0; i < listOfFiles.length; i++) {
+            if (listOfFiles[i].isFile()) {
+                System.out.println("File " + listOfFiles[i].getName());
+                translateFile(listOfFiles[i].getName());
+            }
+        }
+    }
+
+    private static void translateFile(String fileName) throws IOException {
+        File file = new File("/home/oem/test/"+fileName);
         PDDocument document =  replaceText(PDDocument.load(file),"Cecha", "TSET");
         PDFTextStripper pdfStripper = new PDFTextStripper();
         String text = pdfStripper.getText(document);
 //        System.out.print(text);
-        document.save("/home/oem/test/test.pdf");
+        document.save("/home/oem/test/Translations/"+fileName);
         document.close();
     }
 
@@ -61,7 +74,6 @@ public class Start {
                         }
                         if (Character.isUpperCase(string.charAt(0)) || Character.isSpaceChar(string.charAt(0))) {
                             Utils.translate(world, worldLetters);
-                            System.out.println(world);
                             world = "";
                             worldLetters.clear();
                             if (Character.isUpperCase(string.charAt(0))) {
