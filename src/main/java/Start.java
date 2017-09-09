@@ -14,6 +14,7 @@ import org.apache.pdfbox.text.PDFTextStripper;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -22,17 +23,19 @@ import java.util.List;
 public class Start {
 
     public static void main(String[] args) throws IOException {
-        File file = new File("/test/CB0300-10-S02.04.00.pdf");
-        PDDocument document = replaceText(PDDocument.load(file),"Mo", "TSET");
+        File file = new File("/home/oem/test/CB0300-10-S03.02.00.pdf");
+        PDDocument document =  replaceText(PDDocument.load(file),"Cecha", "TSET");
         PDFTextStripper pdfStripper = new PDFTextStripper();
         String text = pdfStripper.getText(document);
 //        System.out.print(text);
-        document.save("/test/test.pdf");
+        document.save("/home/oem/test/test.pdf");
+        document.close();
     }
 
     public static PDDocument replaceText(PDDocument document, String searchString, String replacement) throws IOException {
         PDPageTree pages = document.getDocumentCatalog().getPages();
-
+        String world = "";
+        LinkedList<COSString> worldLetters = new LinkedList<>();
         for (PDPage page : pages) {
             PDFStreamParser parser = new PDFStreamParser(page);
             parser.parse();
@@ -46,13 +49,30 @@ public class Start {
                         // Tj takes one operator and that is the string to display so lets update that operator
                         COSString previous = (COSString) tokens.get(j - 1);
                         String string = previous.getString();
-//                        if (Character.isLetter(string.charAt(0))) {
-//                            System.out.println("TEST:"+string);
-//                        } else {
-                            System.out.println(string);
-//                        }
-                        string = string.replaceFirst(searchString, replacement);
-                        previous.setValue(string.getBytes());
+                        if (string.isEmpty()) {
+                            continue;
+                        }
+                        String asciiHex = previous.toHexString();
+                        if (asciiHex.length()>2) {
+                            String replace = Utils.changeSpecialCharacter(asciiHex);
+                            if (!replace.isEmpty()) {
+                                string = replace;
+                            }
+                        }
+                        if (Character.isUpperCase(string.charAt(0)) || Character.isSpaceChar(string.charAt(0))) {
+                            Utils.translate(world, worldLetters);
+                            System.out.println(world);
+                            world = "";
+                            worldLetters.clear();
+                            if (Character.isUpperCase(string.charAt(0))) {
+                                world += string.toLowerCase();
+                                worldLetters.add(previous);
+                            }
+                        }
+                        if (Character.isLowerCase(string.charAt(0))) {
+                            world += string;
+                            worldLetters.add(previous);
+                        }
                     } else if (op.getName().equals("TJ")) {
                         COSArray previous = (COSArray) tokens.get(j - 1);
                         for (int k = 0; k < previous.size(); k++) {
